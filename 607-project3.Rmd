@@ -18,7 +18,10 @@ OriginalData <- read.csv("https://media.githubusercontent.com/media/alexandersim
 
 #Create a data frame with just the columns that we want to work with
 CleanColumns <- OriginalData %>%
-  select(MainBranch, Education = EdLevel, Years_Experience = YearsCode, Employment_status = Employment, RemoteWork, Country, Currency, Languages = LanguageHaveWorkedWith, Databases = DatabaseHaveWorkedWith, Platforms = PlatformHaveWorkedWith, Tools = ToolsTechHaveWorkedWith, AI = AIDevHaveWorkedWith)
+  #make sure all of the observations we look as is for someone that is a developer by profession
+  filter(MainBranch == "I am a developer by profession") %>%
+  #select columns we want to keep
+  select(Education = EdLevel, Years_Experience = YearsCode, Employment_status = Employment, RemoteWork, Country, Currency, Languages = LanguageHaveWorkedWith, Databases = DatabaseHaveWorkedWith, Platforms = PlatformHaveWorkedWith, Tools = ToolsTechHaveWorkedWith, AI = AIDevHaveWorkedWith)
 tibble(CleanColumns)
 ```
 Currency table
