@@ -21,6 +21,15 @@ CleanColumns <- OriginalData %>%
   select(MainBranch, Education = EdLevel, Years_Experience = YearsCode, Employment_status = Employment, RemoteWork, Country, Currency, Languages = LanguageHaveWorkedWith, Databases = DatabaseHaveWorkedWith, Platforms = PlatformHaveWorkedWith, Tools = ToolsTechHaveWorkedWith, AI = AIDevHaveWorkedWith)
 tibble(CleanColumns)
 ```
+Currency table
+```{r}
+Currency_table <- CleanColumns %>%
+  select(Currency)
+n_distinct(Currency_table)
+unique(Currency_table)
+```
 
+
+There are 145 different types of currencies in this table.
 
 
