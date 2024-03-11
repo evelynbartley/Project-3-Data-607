@@ -9,3 +9,30 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Data overview:
+This report is based on a survey of 89,184 software developers from 185 countries around the world. This is the number of responses we consider “qualified” for analytical purposes based on consenting to share their information in this survey and finishing all the required questions; approximately 2,000 responses were not included in this analysis. The survey was fielded from May 8, 2023 to May 19, 2023.
+
+```{r}
+#Load the original .csv file from Stack Overflow
+OriginalData <- read.csv("https://media.githubusercontent.com/media/alexandersimon1/Data607/main/Project3/survey_results_public.csv", header = TRUE)
+
+#Create a data frame with just the columns that we want to work with
+CleanColumns <- OriginalData %>%
+  #make sure all of the observations we look as is for someone that is a developer by profession
+  filter(MainBranch == "I am a developer by profession") %>%
+  #select columns we want to keep
+  select(Education = EdLevel, Years_Experience = YearsCode, Employment_status = Employment, RemoteWork, Country, Currency, Languages = LanguageHaveWorkedWith, Databases = DatabaseHaveWorkedWith, Platforms = PlatformHaveWorkedWith, Tools = ToolsTechHaveWorkedWith, AI = AIDevHaveWorkedWith)
+tibble(CleanColumns)
+```
+Currency table
+```{r}
+Currency_table <- CleanColumns %>%
+  select(Currency)
+n_distinct(Currency_table)
+unique(Currency_table)
+```
+
+
+There are 145 different types of currencies in this table.
+
+
