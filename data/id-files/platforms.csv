@@ -1,24 +1,3 @@
-﻿platform_id,platform
-1,Amazon Web Services (AWS)
-2,Cloudflare
-3,Colocation
-4,Digital Ocean
-5,Firebase
-6,Fly.io
-7,Google Cloud
-8,Heroku
-9,Hetzner
-10,IBM Cloud or Watson
-11,Linode
-12,Managed Hosting
-13,Microsoft Azure
-14,Netlify
-15,OpenShift
-16,OpenStack
-17,Oracle Cloud Infrastructure (OCI)
-18,OVH
-19,Render
-20,Scaleway
-21,Vercel
-22,Vmware
-23,Vultr
+version https://git-lfs.github.com/spec/v1
+oid sha256:43f65798ab6e279881682a05bef2a2550a00e68bea624d49bb6c47d6e21f183f
+size 373
