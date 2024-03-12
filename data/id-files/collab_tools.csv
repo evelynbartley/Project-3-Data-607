@@ -1,0 +1,41 @@
+﻿tool_id,tool
+1,Android Studio
+2,Atom
+3,BBEdit
+4,Clion
+5,Code::Blocks
+6,condo
+7,DataGrip
+8,Eclipse
+9,Emacs
+10,Fleet
+11,Geany
+12,Goland
+13,Helix
+14,IntelliJ IDEA
+15,Ipython
+16,Jupyter Notebook/JupyterLab
+17,Kate
+18,Micro
+19,Nano
+20,Neovim
+21,Netbeans
+22,Notepad++
+23,Nova
+24,PhpStorm
+25,PyCharm
+26,Qt Creator
+27,"Rad Studio (Delphi, C++ Builder)"
+28,Rider
+29,R Studio
+30,RubyMine
+31,Spyder
+32,Sublime Text
+33,TextMate
+34,Vim
+35,Visual Studio
+36,Visual Studio Code
+37,VSCodium
+38,WebSTorm
+39,Xcode
+40,Other

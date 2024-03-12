@@ -1,0 +1,33 @@
+﻿db_id,Database
+1,BigQuery
+2,Cassandra
+3,Clickhouse
+4,Cloud Firestore
+5,Cockroachdb
+6,Cosmos DB
+7,Couch DB
+8,Couchbase
+9,Datomic
+10,DuckDB
+11,Dynamodb
+12,Elasticsearch
+13,Firebase Realtime Database
+14,Firebird
+15,H2
+16,IBM DB2
+17,InfluxDB
+18,MariaDB
+19,Microsoft Access
+20,Microsoft SQL Server
+21,MongoDB
+22,MySQL
+23,Neo4J
+24,Oracle
+25,PostgreSQL
+26,RavenDB
+27,Redis
+28,Snowflake
+29,Solr
+30,SQLite
+31,Supabase
+32,TiDB
