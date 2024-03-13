@@ -56,7 +56,7 @@ datascientists_2023 <- survey_2023 %>%
 
 This is the ER Diagram of our SQL database:
 
-![](images/ER_diagram.png){width="985"}
+![](images/ER_diagram.png){width="913"}
 
 Generated ID tables in PostgreSQL for all the possible answers from the survey for each topic we want to examine.
 
@@ -66,7 +66,7 @@ The survey data will be tidied in R, pushed to pre-made relational tables in Pos
 
 ### Tidy the Data
 
-\*\*NOTE to authors - because there is already a table with the USD value of an observation's compensation already converted, I'm using that column for our 'compensation_usd' column
+**NOTE to authors** - because there is already a table with the USD value of an observation's compensation already converted, I'm using that column for our 'compensation_usd' column
 
 ```{r tidy-ds_2023, warning=FALSE}
 # Match df to 'employee' table format
@@ -100,14 +100,28 @@ employees_df <- datascientists_2023 %>%
          ai_tools)
 ```
 
-### Split the Columns
+### Normalize the Multiple Answers
 
-Our variables of interest were all in response to select-all-that-apply survey questions. In order to record each of the answers, each of the 5 multi-choice answer columns must be split so that there is one answer per column, and then pivoted back together for a long, tidy, easily queried database.
+Our variables of interest were all in response to select-all-that-apply survey questions. In order to record each of the answers, each of the 5 multi-choice answer columns must be split so that there is one answer per column in a relational table in the database.
 
-We pivot our survey results longer so that every checkbox has an observation
+We pivot our survey results longer so that every checkbox has an observation. But if we keep them in the same table, we'll double our data.
 
-```{r call-split_and_unest}
+We convert multiple choice questions to factors for ease-of-use later.
 
+```{r create-factors}
+# Columns of interest to factors
+employees_df <- employees_df %>% 
+  mutate(language_id = as.factor(language),
+         platform_id = as.factor(platform),
+         db_id = as.factor(database),
+         tool_id = as.factor(ifelse(collab_tools == "Unknown", NA, collab_tools)),
+         ai_id = as.factor(ifelse(ai_tools == "Unknown", NA, ai_tools))
+  )
+```
+
+We define functions for algorithms we will run repeatedly. I tried to write a function that did all the steps to normalize each survey question, but it was too nuanced.
+
+```{r define-functions}
 # Define split-and-unnest function
 split_and_unnest <- function(data, columns, na_replace = "") {
   split_data <- lapply(columns, function(col) str_split(data[[col]], ";"))
@@ -122,38 +136,7 @@ split_and_unnest <- function(data, columns, na_replace = "") {
   return(data)
 }
 
-employees_df <- employees_df %>%
-  split_and_unnest('language', na_replace = "Unknown") %>% 
-  split_and_unnest('platform', na_replace = "Unknown") %>% 
-  split_and_unnest('database', na_replace = "Unknown") %>%
-  split_and_unnest('collab_tools', na_replace = "Unknown") %>% 
-  split_and_unnest('ai_tools', na_replace = "Unknown")
-
-```
-
-We convert multiple choice questions to factors for ease-of-use later.
-
-```{r create-factors}
-# Columns of interest to factors
-employees_df <- employees_df %>% 
-  mutate(language = as.factor(language),
-         platform = as.factor(platform),
-         database = as.factor(database),
-         collab_tools = as.factor(ifelse(collab_tools == "Unknown", NA, collab_tools)),
-         ai_tools = as.factor(ifelse(ai_tools == "Unknown", NA, ai_tools))
-  )
-```
-
-Dataframe `employee_df` is now clean and tidy.
-
-### Cross-reference ID numbers
-
-Now we cross-reference the string in each cell with its corresponding ID number using the ID tables. We create a new dataframe to do this, so that we always have a dataframe with the actual answers, and other that references ID tables on the server.
-
-First load the ID number tables from the server.
-
-```{r load-id-tables}
-# Define convert_to_factors function
+#convert
 convert_to_factors <- function(data, columns) {
   data <- data %>%
     mutate(
@@ -161,76 +144,79 @@ convert_to_factors <- function(data, columns) {
     )
   return(data)
 }
+```
 
-# Apply the function to each database table
-language_id <- dbGetQuery(sql_db, "SELECT * FROM languages") %>%
+Normalize each survey question we are interested in to its own table.
+
+```{r languages-pivot}
+languages_df <- employees_df %>%
+  select(response_id, language_id) %>% 
+  split_and_unnest('language_id', na_replace = "Unknown") 
+  
+language_id <- dbGetQuery(sql_db, "SELECT * FROM id_languages") %>%
   convert_to_factors(c("language_id", "language"))
 
-db_id <- dbGetQuery(sql_db, "SELECT * FROM databases") %>%
-  convert_to_factors(c("db_id", "database"))
+languages_df$language_id <- language_id$language_id[match(languages_df$language_id, language_id$language)]  %>% as.numeric()
+```
 
-ai_id <- dbGetQuery(sql_db, "SELECT * FROM ai_tools") %>%
-  convert_to_factors(c("ai_id", "ai_tool"))
-
-platform_id <- dbGetQuery(sql_db, "SELECT * FROM platforms") %>%
+```{r platforms-pivot}
+platforms_df <- employees_df %>%
+  select(response_id, platform_id) %>% 
+  split_and_unnest('platform_id', na_replace = "Unknown") 
+  
+platform_id <- dbGetQuery(sql_db, "SELECT * FROM id_platforms") %>%
   convert_to_factors(c("platform_id", "platform"))
 
-tools_id <- dbGetQuery(sql_db, "SELECT * FROM collab_tools") %>%
+platforms_df$platform_id <- platform_id$platform_id[match(platforms_df$platform_id, platform_id$platform)]  %>% as.numeric()
+```
+
+```{r db-pivot}
+db_df <- employees_df %>%
+  select(response_id, db_id) %>% 
+  split_and_unnest('db_id', na_replace = "Unknown") 
+  
+db_id <- dbGetQuery(sql_db, "SELECT * FROM id_databases") %>%
+  convert_to_factors(c("db_id", "database"))
+
+db_df$db_id <- db_id$db_id[match(db_df$db_id, db_id$database)]  %>% as.numeric()
+```
+
+```{r tools-pivot}
+tools_df <- employees_df %>%
+  select(response_id, tool_id) %>% 
+  split_and_unnest('tool_id', na_replace = "Unknown") 
+  
+tool_id <- dbGetQuery(sql_db, "SELECT * FROM id_collab_tools") %>%
   convert_to_factors(c("tool_id", "tool"))
+
+tools_df$tool_id <- tool_id$tool_id[match(tools_df$tool_id, tool_id$tool)] %>% as.numeric()
 ```
 
-If all our columns are factors, we can easily use the `match()` function to replace our column values with their corresponding ID numbers from the ID tables.
+```{r ai-pivot}
+ai_df <- employees_df %>%
+  select(response_id, ai_id) %>% 
+  split_and_unnest('ai_id', na_replace = "Unknown") 
+  
+ai_id <- dbGetQuery(sql_db, "SELECT * FROM id_ai_tools") %>%
+  convert_to_factors(c("ai_id", "ai_tool"))
 
-```{r map-ids}
-# Replace factor values with integer IDs
-employees_sql <- employees_df
-
-employees_sql$language <- language_id$language_id[match(employees_sql$language, language_id$language)] 
-
-employees_sql$platform <- platform_id$platform_id[match(employees_sql$platform, platform_id$platform)] 
-
-employees_sql$database <- db_id$db_id[match(employees_sql$database, db_id$database)]
-
-employees_sql$collab_tools <- tools_id$tool_id[match(employees_sql$collab_tools, tools_id$tool)]
-
-employees_sql$ai_tools <- ai_id$ai_id[match(employees_sql$ai_tools, ai_id$ai_tool)]
-
-# Reclassify factor columns
-employees_sql <- employees_sql %>% 
-  mutate(language_id = as.numeric(language),
-         platform_id = as.numeric(platform),
-         db_id = as.numeric(database),
-         tool_id = as.numeric(collab_tools),
-         ai_id = as.numeric(ai_tools)) %>% 
-  select(response_id, 
-         country,
-         job_title,
-         industry,
-         education,
-         office_location,
-         compensation_usd,
-         years,
-         language_id,
-         platform_id,
-         db_id,
-         tool_id,
-         ai_id)
+ai_df$ai_id <- ai_id$ai_id[match(ai_df$ai_id, ai_id$ai_id)] %>% as.numeric()
 ```
 
-Our 'employees_sql' dataframe is clean, tidy and in the format we need for SQL. Time to write the table to the server.
+All our relational tables are created and have their data.
 
-```{r write-employee-table}
-dbWriteTable(sql_db, "employees", employees_sql, append = TRUE)
+```{r clean-employees_df}
+employees_sql <- employees_df %>% 
+  select(response_id, country, industry, education, office_location, compensation_usd, years)
+
+
 ```
+
+Our SQL relational database is now clean and tidy! I have removed the functions that write to the SQL database so our tables don't get overwritten. They were all variations of `dbWriteTable(sql_db, "employees_language", languages_df, append = TRUE)`
 
 ## Analysis
 
-At this point, `employees_df` is ready for analysis, and has all the names of the skills as factors.
-
-`employees_sql` has the answers replaced with their ID numbers, in reference to their related database tables.
-
-Both formats (or calls to the server!) are ready for analysis.
-
+Let's do some analysis!
 ```{r list-tables}
 dbListTables(sql_db)
 ```
