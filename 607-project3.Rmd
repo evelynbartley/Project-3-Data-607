@@ -8,11 +8,6 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-# Load environment variables
-if (!require(dotenv)) print("dotenv package not installed")
-library(dotenv)
-dotenv::load_dot_env()
-
 # Load database interface package
 if (!require(RPostgres)) print("RPostgres package not installed")
 library(RPostgres)
@@ -20,11 +15,11 @@ library(RPostgres)
 # Establish database connection
 sql_db <- dbConnect(
   RPostgres::Postgres(),
-  dbname = Sys.getenv("DB_NAME"),
-  host = Sys.getenv("DB_HOST"),
-  port = as.integer(Sys.getenv("DB_PORT")),
-  user = Sys.getenv("DB_USER"),
-  password = Sys.getenv("DB_PASSWORD")
+  dbname = "project3",
+  host = "127.0.0.1",
+  port = 5433,
+  user = "postgres",
+  password = "1234"
 )
 ```
 
