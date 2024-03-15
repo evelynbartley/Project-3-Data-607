@@ -14,6 +14,8 @@ library(RPostgres)
 library(RColorBrewer)
 library(tidyverse)
 library(wordcloud)
+library(kableExtra)
+library(hexbin)
 
 # Establish database connection
 sql_db <- dbConnect(
@@ -41,6 +43,8 @@ We divided this question into two parts–hard skills and soft skills-and analyz
 ## Data overview
 
 The hard skills analysis is based on the 2023 [Stack Overflow Annual Developer Survey](https://insights.stackoverflow.com/survey/), which includes survey responses from more than 90,000 software developers from 185 countries. The survey was fielded from May 8, 2023 to May 19, 2023.
+
+\<\<\<How was 185 determined? The Countries section below shows 91 unique countries. \>\>\>
 
 For analysis, we only considered respondents who indicated in the survey that they consented to share their information and answered all the required questions. Approximately 2,000 responses were excluded based on these criteria, leaving 89,184 for analysis.
 
@@ -267,7 +271,7 @@ Our SQL relational database is now clean and tidy! I have removed the functions 
 
 This is diagram of our relational database:
 
-![](images/ER_diagram.png){width="1091"}
+![Entity-relationship diagram](https://github.com/evelynbartley/Project-3-Data-607/blob/main/images/ER_diagram.png?raw=true)
 
 ## Analysis
 
@@ -275,6 +279,172 @@ Do analysis here!
 
 ```{r list-tables}
 dbListTables(sql_db)
+```
+
+## Employee characteristics
+
+### Countries
+
+Data scientists in the dataset were from 91 countries.
+
+```{r count-employee-countries}
+survey_countries <- employees_df %>%
+  group_by(country) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  rename(region = country)
+```
+
+```{r get-map-data}
+mapdata <- map_data("world")
+mapdata <- mapdata %>%
+  mutate(
+    region = str_replace(region, "Hong Kong", "Hong Kong (S.A.R.)"),
+    region = str_replace(region, "Iran", "Iran, Islamic Republic of"),
+    region = str_replace(region, "North Macedonia", "The former Yugoslav Republic of Macedonia"),    
+    region = str_replace(region, "Russia", "Russian Federation"),
+    region = str_replace(region, "UK", "United Kingdom of Great Britain and Northern Ireland"),
+    region = str_replace(region, "USA", "United States of America"),    
+    region = str_replace(region, "Vietnam", "Viet Nam")
+  )
+```
+
+```{r combine-map-data}
+map_surveys <- left_join(mapdata, survey_countries, by = "region")
+```
+
+The map shows that although survey responses were received from 91 countries, most responders were from the US. Countries without any survey responses are shown in gray.
+
+```{r create-map, fig.width=6, warning = FALSE}
+ggplot(map_surveys, aes(x = long, y = lat, group=group)) +
+  coord_fixed(1.3) +
+  geom_polygon(aes(fill = n)) +
+  scale_fill_distiller(palette = "RdBu", direction = -1, name = "n") +
+  theme_void() + 
+  theme(legend.position = c(0.1, 0.35), legend.title = element_text(hjust = 0.15))
+```
+
+<br>
+
+### Education level
+
+```{r count-education-levels}
+survey_education <- employees_df %>%
+  group_by(education) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  mutate(
+    education = str_replace(education, "Professional.*", "Advanced"), 
+    education = str_replace(education, "Master.*", "Master's"),     
+    education = str_replace(education, "Bachelor.*", "Bachelor"),    
+    education = str_replace(education, "Associate.*", "Associate"),    
+    education = str_replace(education, "Some college.*", "Some college"),
+    education = str_replace(education, "Secondary.*", "High school"),
+    education = str_replace(education, "Primary.*", "Primary")    
+  )
+```
+
+Most data scientists had a master's degree.
+
+```{r most-common-degrees-barplot}
+ggplot(survey_education, aes(x = reorder(education, n), y = n)) +
+  geom_col() + 
+  coord_flip() +
+  xlab("Highest degree") + theme(axis.title = element_text(face = "bold")) +
+  scale_y_continuous(breaks = seq(0, 700, by = 100)) 
+```
+
+<br>
+
+### Industry type
+
+```{r count-industry-types}
+survey_industry <- employees_df %>%
+  drop_na(industry) %>%
+  group_by(industry) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  mutate(
+    industry = str_replace(industry, "Information.*", "IT"),
+    industry = str_replace(industry, "Financial.*", "Finance"),
+    industry = str_replace(industry, "Manufacturing.*", "Manufacturing"),
+    industry = str_replace(industry, "Retail.*", "Retail"),
+    industry = str_replace(industry, "Advertising.*", "Advertising"),
+    industry = str_replace(industry, "Higher.*", "Education"),
+    industry = str_replace(industry, "Legal.*", "Legal")
+  )
+```
+
+Data scientists were mostly employed in IT. The next most common fields (other than "Other") were finance, manufacturing, and healthcare.
+
+```{r most-common-industries-barplot}
+ggplot(survey_industry, aes(x = reorder(industry, n), y = n)) +
+  geom_bar(stat = 'identity') + 
+  coord_flip()  +
+  xlab("Industry") + theme(axis.title = element_text(face = "bold")) +
+  scale_y_continuous(breaks = seq(0, 300, by = 50)) 
+```
+
+<br>
+
+### Annual compensation
+
+The mean annual compensation was 117,833 USD.
+
+```{r compensation-statistics}
+survey_compensation <- employees_df %>%
+  select(compensation) %>%
+  drop_na()
+
+survey_compensation %>%
+  summarise(
+    min = min(compensation),
+    max = max(compensation),
+    mean = mean(compensation),
+    SD = sd(compensation),
+    median = median(compensation),
+    IQR = IQR(compensation)
+  ) %>%
+  kbl() %>% 
+  kable_material()
+```
+
+The distribution is unimodal and skewed to the right by some very large values. To improve the visualization, values \>1,000,000 USD were aggregated into an outlier bin in the histogram.
+
+```{r compensation-histogram}
+survey_compensation <- survey_compensation %>%
+  mutate(
+    compensation_adjusted = if_else(compensation > 1000000, 1000000, compensation)
+  )
+
+ggplot(survey_compensation, aes(x = compensation_adjusted)) +
+  geom_histogram(binwidth = 5000) +
+  xlab("Compensation (USD)") + theme(axis.title = element_text(face = "bold")) +  
+  scale_x_continuous(breaks = c(0, 250000, 500000, 750000, 1000000), 
+                     labels = c("0", "250000", "500000", "750000", ">1000000"))
+```
+
+<br>
+
+### Annual compensation vs years of experience
+
+```{r compensation-experience}
+survey_comp_experience <- employees_df %>%
+  select(compensation, years) %>%
+  drop_na()
+```
+
+Due to the large number of overlapping data points, a hexagonal heatmap was used to show the relationshiop between years of experience and annual compensation. In the heatmap, data points are binned into hexagons, which are filled with a color gradient corresponding to the number of data points in each hexagon. The red hexagons shows that most data scientists who completed the survey had \<5 years of experience and earned \<100,000 USD.
+
+Surprisingly, greater experience was not associated with higher compensation. Some data scientists with \<15 years of experience earned large salaries, and those with \>20 years of experience earned similar amounts as those who just entered the field. This suggests that other factors besides years of experience influence the compensation of data scientists.
+
+```{r comp-experience-scatterplot, warning = FALSE}
+ggplot(survey_comp_experience, aes(x = years, y = compensation)) +
+  stat_binhex(bins = 50) +
+  scale_fill_gradient(low = "lightblue", high = "red") +
+  ylim(0, 1000000) + 
+  xlab("Years of experience") + ylab("Compensation (USD)") + 
+  theme(axis.title = element_text(face = "bold"))
 ```
 
 <br>
