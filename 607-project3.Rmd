@@ -255,6 +255,23 @@ Do analysis here!
 
 ```{r list-tables}
 dbListTables(sql_db)
+library(dplyr)
+library(tidyverse)
+library(forcats)
+
+# count the occurrence of languages in the survey , group the occurrences more than less than 50 times into "others"  and finally arrange in the descending order and plot in a column chart.
+languages_df %>% 
+  count(language_id)%>% 
+  mutate(language_id = if_else(n > 100, language_id, "others")) %>% 
+  ggplot(aes(x = fct_reorder(language_id,n), y = n)) + 
+    geom_col(fill = "lightblue") + 
+  coord_flip() +
+    labs(x = "languages", y = "most valuable data science - language skills", caption = "https://insights.stackoverflow.com/survey/")
+
+
+```
+ 
+
 ```
 
 ## Conclusion
