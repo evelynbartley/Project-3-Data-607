@@ -320,7 +320,7 @@ language_skills %>%
 
 
 ### Database skills
-PostgreSQL is  the most popular language skill for data scientists.
+PostgreSQL is the most popular database for data scientists.
 followed by MySQL, SQLite and Microsoft SQL server
 
 ```{r}
@@ -344,7 +344,7 @@ db_skills <- subset(db_skills,db_id != "NA")
 ```
 
 ### Tool skills
-Visual Studio Code is the most popular language skill for data scientists.
+Visual Studio Code is the most popular tool for data scientists.
 followed by Jupyter Notebook/lab , PyCharm ,IPython,Vim,Notepad++, RStudio
 
 
