@@ -364,7 +364,7 @@ tool_skills$tool_id <- tool_id$tool[match(tool_skills$tool_id,tool_id$tool_id)]
   ggplot(aes(x = fct_reorder(tool_id,n), y = n)) + 
     geom_col(fill = "lightblue") + 
   coord_flip() +
-    labs(x = "Databases", y = "most valuable data science - Database skills", caption = "https://insights.stackoverflow.com/survey/")
+    labs(x = "Databases", y = "most valuable data science - Tool skills", caption = "https://insights.stackoverflow.com/survey/")
 
 ```
 
