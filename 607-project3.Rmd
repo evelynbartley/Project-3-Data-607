@@ -283,6 +283,82 @@ dbListTables(sql_db)
 
 ## Exploratory data analysis
 
+### language skills
+Python is  the most popular language skill for data scientists.
+followed by SQL, Bash/Shell , Javascript, HTML/CSS,R
+```{r}
+# count the occurrence of languages in the survey , group the occurrences more than less than 100 times into "others"  and finally arrange in the descending order and plot in a column chart.
+
+language_skills <- languages_df 
+  language_skills$language_id <- language_id$language[match(language_skills$language_id,language_id$language_id)] 
+
+
+language_skills %>% 
+  count(language_id)%>% 
+  mutate(language_id = if_else(n > 100, language_id, "others")) %>% 
+  ggplot(aes(x = fct_reorder(language_id,n), y = n)) + 
+    geom_col(fill = "lightblue") + 
+  coord_flip() +
+    labs(x = "languages", y = "most valuable data science - language skills", caption = "https://insights.stackoverflow.com/survey/")
+
+
+```
+
+
+### Database skills
+PostgreSQL is  the most popular language skill for data scientists.
+followed by MySQL, SQLite and Microsoft SQL server
+
+```{r}
+#creating a new database skills table by joining the employees_database table and the database_Id table to get the description of the IDs.
+db_skills <- db_df 
+db_skills$db_id <- db_id$database[match(db_skills$db_id,db_id$db_id)] 
+
+#Filtering the rows which have NA as the database
+db_skills <- subset(db_skills,db_id != "NA")
+
+  
+# count the occurrence of databases in the survey , group the occurrences less than 100 times into "others"  and finally arrange in the descending order and plot in a column chart.
+  db_skills %>% 
+  count(db_id)%>% 
+  mutate(db_id = if_else(n > 100, db_id, "others")) %>% 
+  ggplot(aes(x = fct_reorder(db_id,n), y = n)) + 
+    geom_col(fill = "lightblue") + 
+  coord_flip() +
+    labs(x = "Databases", y = "most valuable data science - Database skills", caption = "https://insights.stackoverflow.com/survey/")
+
+```
+
+### Tool skills
+Visual Studio Code is the most popular language skill for data scientists.
+followed by Jupyter Notebook/lab , PyCharm ,IPython,Vim,Notepad++, RStudio
+
+
+
+```{r}
+
+#creating a new database skills table by joining the employees_database table and the database_Id table to get the description of the IDs.
+tool_skills <- tools_df 
+tool_skills$tool_id <- tool_id$tool[match(tool_skills$tool_id,tool_id$tool_id)] 
+
+#Filtering the rows which have NA as the database
+#db_skills <- subset(_skills,db_id != "NA")
+
+  
+# count the occurrence of databases in the survey , group the occurrences less than 100 times into "others"  and finally arrange in the descending order and plot in a column chart.
+  tool_skills %>% 
+  count(tool_id)%>% 
+  mutate(tool_id = if_else(n > 100, tool_id, "others")) %>% 
+  ggplot(aes(x = fct_reorder(tool_id,n), y = n)) + 
+    geom_col(fill = "lightblue") + 
+  coord_flip() +
+    labs(x = "Databases", y = "most valuable data science - Database skills", caption = "https://insights.stackoverflow.com/survey/")
+
+```
+
+
+
+
 ### Countries
 
 Data scientists in the dataset were from 91 countries.
@@ -295,7 +371,11 @@ survey_countries <- employees_df %>%
   rename(region = country)
 ```
 
+
 ```{r get-map-data}
+library(ggplot2)
+library(maps)
+library(ggmap)
 mapdata <- map_data("world")
 mapdata <- mapdata %>%
   mutate(
