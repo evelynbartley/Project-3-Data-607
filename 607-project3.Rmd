@@ -11,7 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load database interface package
 if (!require(RPostgres)) print("RPostgres package not installed")
 library(RPostgres)
-
+library(RColorBrewer)
+library(tidyverse)
+library(wordcloud)
 
 # Establish database connection
 sql_db <- dbConnect(
@@ -24,20 +26,32 @@ sql_db <- dbConnect(
 )
 ```
 
-## Introduction
+\<\<\< Can we create a table of contents? \>\>\>
 
-```{r load-libraries, warning=FALSE, message=FALSE}
-library(tidyverse)
-```
+# Introduction
 
-## Data overview:
+We selected the Data Science Skills option for Project 3. Here, we describe the identification, collection, database storage, and analyses of data to answer the question, "Which are the most valued data science skills?"
 
-This report is based on a survey of 89,184 software developers from 185 countries around the world. This is the number of responses we consider “qualified” for analytical purposes based on consenting to share their information in this survey and finishing all the required questions; approximately 2,000 responses were not included in this analysis. The survey was fielded from May 8, 2023 to May 19, 2023.
+We divided this question into two parts–hard skills and soft skills-and analyzed each separately. The "value" of a skill was defined as the frequency of its occurrence (ie, a skill that is mentioned many times in a dataset would be a highly valued skill).
+
+<br>
+
+# [Hard skills analysis]{.underline}
+
+## Data overview
+
+The hard skills analysis is based on the 2023 [Stack Overflow Annual Developer Survey](https://insights.stackoverflow.com/survey/), which includes survey responses from more than 90,000 software developers from 185 countries. The survey was fielded from May 8, 2023 to May 19, 2023.
+
+For analysis, we only considered respondents who indicated in the survey that they consented to share their information and answered all the required questions. Approximately 2,000 responses were excluded based on these criteria, leaving 89,184 for analysis.
+
+We downloaded the original CSV data file from Stack Overflow and saved it in our team GitHub repository.
 
 ```{r load-data}
-#Load the original .csv file from Stack Overflow
+#Load the original .csv file
 survey_2023 <- read.csv("https://media.githubusercontent.com/media/alexandersimon1/Data607/main/Project3/survey_results_public.csv", header = TRUE)
 ```
+
+### Data transformations
 
 We filter the survey for only the observations of interest - those who identified as "Data scientists or Machine-Learning Specialist" and "a developer by profession", so that all survey results reflect our population of interest - professional, working data scientists.
 
@@ -48,17 +62,21 @@ datascientists_2023 <- survey_2023 %>%
          MainBranch == "I am a developer by profession")
 ```
 
+<br>
+
 ### Database Design
 
 Describe philosophy behind normalization
 
 Generated ID tables in PostgreSQL for all the possible answers from the survey for each topic we want to examine.
 
+<br>
+
 ## Data Tidying
 
 The survey data will be tidied in R, pushed to pre-made relational tables in PostgreSQL, and then analyzed through R.
 
-### Tidy the Data
+### Tidy the data
 
 **NOTE to authors** - because there is already a table with the USD value of an observation's compensation already converted, I'm using that column for our 'compensation' column
 
@@ -93,7 +111,9 @@ employees_df <- datascientists_2023 %>%
          ai_tools)
 ```
 
-### Normalize Multiple Answers
+<br>
+
+### Normalize multiple answers
 
 Our variables of interest were all in response to select-all-that-apply survey questions. In order to record each of the answers, each of the 5 multi-choice answer columns must be split so that there is one answer per column in a relational table in the database.
 
@@ -255,25 +275,300 @@ Do analysis here!
 
 ```{r list-tables}
 dbListTables(sql_db)
-library(dplyr)
-library(tidyverse)
-library(forcats)
-
-# count the occurrence of languages in the survey , group the occurrences more than less than 50 times into "others"  and finally arrange in the descending order and plot in a column chart.
-languages_df %>% 
-  count(language_id)%>% 
-  mutate(language_id = if_else(n > 100, language_id, "others")) %>% 
-  ggplot(aes(x = fct_reorder(language_id,n), y = n)) + 
-    geom_col(fill = "lightblue") + 
-  coord_flip() +
-    labs(x = "languages", y = "most valuable data science - language skills", caption = "https://insights.stackoverflow.com/survey/")
-
-
-```
- 
-
 ```
 
-## Conclusion
+<br>
 
-### Bibliography
+# [Soft skills analysis]{.underline}
+
+## Data
+
+Soft skills data were collected from two different sources.
+
+1.  Informational websites that ranked the most important soft skills for data scientists. A total of 65 websites were identified from the following Google searches (URLs for all sites are in the data file):
+
+    -   "soft skills" "data science"
+
+    -   companies that hire data scientists "soft skills"
+
+    -   data scientist recruit "soft skills"
+
+2.  Kaggle [dataset](https://www.kaggle.com/datasets/asaniczka/data-science-job-postings-and-skills) of 12,217 data science-related job postings on LinkedIn during 2024.
+
+All original data were CSV files and saved to our team GitHub repository.
+
+```{r read-raw-data1}
+soft_skills_raw <- read_csv('https://media.githubusercontent.com/media/evelynbartley/Project-3-Data-607/main/data/data_science_soft_skills.csv', show_col_types = FALSE)
+```
+
+```{r read-raw-data2}
+job_postings_raw <- read_csv('https://media.githubusercontent.com/media/evelynbartley/Project-3-Data-607/main/data/job_postings_all.csv', show_col_types = FALSE)
+```
+
+<br>
+
+## Data transformations
+
+### Data from soft skills websites
+
+```{r select-columns1}
+soft_skills <- soft_skills_raw %>%
+  select(Company, Author_name_last, Author_name_first, Field, Audience, Skill, Rank, Date_publish)
+```
+
+No other transformations were necessary with this dataframe because long data formatting and tidy data principles were applied at the time of data collection.
+
+The dataframe looks like this:
+
+```{r glimpse-df1}
+glimpse(soft_skills)
+```
+
+### Data from job postings
+
+Select relevant columns and convert case
+
+```{r select-columns2, include=FALSE}
+job_postings <- job_postings_raw %>%
+  select(job_title, job_level, job_skills) %>%
+  mutate(
+    job_title = toupper(job_title),
+    job_level = toupper(job_level),
+    job_skills = toupper(job_skills)
+  )  
+```
+
+The data were limited to jobs with "Data Scientist" in the job title. A total of 809 job postings met this criterion.
+
+```{r filter-ds-jobs}
+job_postings <- job_postings %>%
+  filter(grepl("DATA SCIENTIST", job_title))
+
+nrow(job_postings)
+```
+
+The dataframe looks like this:
+
+```{r glimpse-df2}
+glimpse(job_postings)
+```
+
+<br>
+
+## Analyses
+
+### Soft skills websites
+
+#### Finding #1: Communication is the most common (valued) soft skill in websites about important soft skills for data scientists
+
+```{r top-skills-websites}
+top_skills_overall <- soft_skills %>%
+  group_by(Skill) %>%
+  tally() %>%
+  arrange(desc(n))
+```
+
+<br>
+
+We show this with 2 different visualizations. The first is a word cloud, which scales the font size of words to their frequency in a dataset. Of note, word clouds work best with single words, so skills described by more than one word were reworded with a synonym or hyphenated.
+
+Communication is the biggest word in the cloud, which means that it is the most common skill in the dataset. On the other hand, skills with small font sizes, such as intuition and empathy, were not very common.
+
+```{r top-skills-websites-wordcloud, fig.height=6}
+set.seed(1234)
+wordcloud(words = top_skills_overall$Skill, 
+          freq = top_skills_overall$n, min.freq = 3,
+          max.words = 50, random.order = FALSE, rot.per = 0,
+          colors = brewer.pal(5, "Dark2"))
+```
+
+The word cloud is visually appealing but isn't quantitative, so we also show the frequency of the soft skills with a barplot. Only skills that occurred more than once in the dataset are shown.
+
+```{r top-skills-websites-barplot, fig.height=6}
+ggplot(filter(top_skills_overall, n > 2), aes(x = reorder(Skill, n), y = n)) +
+  geom_bar(stat = 'identity') + 
+  coord_flip() +  
+  xlab("Soft skill") + ylab("Count") + theme(axis.title = element_text(face = "bold")) +
+  scale_y_continuous(breaks = seq(0, 60, by = 10))
+```
+
+<br>
+
+#### Finding #2: Communication has consistently been the most common (valued) soft skill over time
+
+Group data by year, drop rows without year info, and filter out skills that only occur once
+
+```{r top-skills-by-year}
+top_skills_year <- soft_skills %>%
+  group_by(year = lubridate::year(Date_publish), Skill) %>%
+  tally() %>%
+  drop_na(year) %>%
+  filter(n > 2) %>%
+  arrange(desc(n))
+```
+
+The stacked barplot shows that communication has been the most frequent soft skill since 2021. In addition, the number of skills of interest has increased each year since 2021, which may indicate that the data science field is becoming increasingly competitive.
+
+```{r top-skills-by-year-barplot}
+ggplot(top_skills_year, aes(x = factor(year), y = n, fill = Skill)) +
+  geom_bar(stat = 'identity', position = 'fill') +
+  xlab("Year") + ylab("Proportion") + theme(axis.title = element_text(face = "bold")) +
+  labs(caption = "Data as of March 2024")
+```
+
+<br>
+
+#### Finding #3: The most common (valued) soft skills vary by target audience
+
+Group data by target audience and skill, then calculate frequencies. To prevent the barplot from being too crowded, only skills that occurred more than 3 times were included in this analysis.
+
+```{r top-skills-by-audience, message = FALSE}
+top_skills_audience <- soft_skills %>%
+  group_by(Audience, Skill) %>%
+  summarise(n = n()) %>%
+  filter(n > 3) %>%  
+  mutate(freq = n / sum(n)) %>%
+  arrange(desc(freq))
+```
+
+The stacked barplot shows that websites targeted to students name the most soft skills whereas websites targeted to job seekers name the fewest. Websites targeted to employees and companies (generally human resource departments) are in between. These results suggest that students are being encouraged to cultivate many skills, whereas graduates (ie, job seekers or employees) are being encouraged to hone a few specific skills.
+
+The difference in skills between employees and companies makes intuitive sense. Employees, who are most likely working on problems and interacting with colleagues, need to have problem-solving and analytical skills. On the other hand, companies that are seeking growth and profit would benefit from job candidates who are curious and have entrepreneurial skills.
+
+But the most common skill across all audiences is communication. This also makes sense because it is a general skill and not much can be achieved without it.
+
+```{r top-skills-by-audience-barplot}
+order <- c("General", "Students", "Job seekers", "Employees", "Companies")
+ggplot(top_skills_audience, aes(x = Audience, y = freq, fill = Skill)) +
+  geom_col(position = "fill") +
+  scale_x_discrete(limits = order) +
+  xlab("Target audience") + ylab("Proportion") + 
+  theme(axis.title = element_text(face = "bold"))
+```
+
+<br>
+
+### Data science job postings
+
+We first need to define the soft skills of interest. This was done by using the soft skills identified by the web search above and adding some common synonyms.
+
+```{r soft-skills-regex}
+soft_skills_terms <- c("ACCOUNTABILITY", "ADAPTABILITY|FLEXIBILITY|RESOURCEFUL", 
+                       "ANALYTICAL|CRITICAL|LOGIC", 
+                       "ATTENTION TO DETAIL", 
+                       "ACUMEN|BUSINESS INTELLIGENCE|ENTREPRENEUR",
+                       "COLLABORATION|TEAM", "COMMUNICATION|PRESENTATION|STORY", 
+                       "CREATIVITY|INNOVATION", 
+                       "CURIOSITY",
+                       "EMOTIONAL INTELLIGENCE|EMPATHY", 
+                       "INDEPENDENCE|INITIATIVE|MOTIVAT", "INTEGRITY|CREDIBLE|TRUSTWORTHY", 
+                       "INTERPERSONAL", "INTUITION",
+                       "JUDGMENT",
+                       "LEADERSHIP", "LISTEN",
+                       "ORGANIZATION|PLANNING", "OWNERSHIP",
+                       "PASSION", "PERSUASION", "PERSEVERANCE|PERSISTANCE",
+                       "PROBLEM", "PROFESSIONALISM", 
+                       "RELIABILITY", 
+                       "MULTITASKING|TIME MANAGEMENT|PRIORITIZATION")
+```
+
+Now we can count the number of postings with these skills.
+
+```{r filter-rows-postings}
+soft_skills_freq <- as_tibble(soft_skills_terms)
+soft_skills_freq <- soft_skills_freq %>%
+  rename(Skill = value) %>%
+  rowwise() %>%
+  mutate(
+    n = sum(grepl(Skill, job_postings$job_skills))
+  ) %>%
+  mutate(
+    Skill = str_replace(Skill, "([A-Z]*)[ \\|].*", "\\1"),
+    Skill = str_to_title(Skill),
+    Skill = str_replace(Skill, "Acumen", "Entrepreneurial"),
+    Skill = str_replace(Skill, "Emotional Intelligence", "EQ"),
+    Skill = str_replace(Skill, "Problem", "Problem-solving")    
+  ) %>%  
+  arrange(desc(n))
+```
+
+<br>
+
+#### Finding #1: Communication is the most common (valued) soft skill in data scientist job postings
+
+As before, we show this with a word cloud and a barplot.
+
+```{r job-postings-skills-wordcloud, fig.height=6, fig.width=6}
+set.seed(1234)
+wordcloud(words = soft_skills_freq$Skill, 
+          freq = soft_skills_freq$n, min.freq = 3,
+          max.words = 50, random.order = FALSE, rot.per = 0,
+          colors = brewer.pal(5, "Dark2"))
+```
+
+```{r top-skills-postings-barplot, fig.height=6}
+ggplot(filter(soft_skills_freq, n > 2), aes(x = reorder(Skill, n), y = n)) +
+  geom_bar(stat = 'identity') + 
+  coord_flip() +  
+  xlab("Soft skill") + ylab("Count") + theme(axis.title = element_text(face = "bold")) +
+  scale_y_continuous(breaks = seq(0, 400, by = 50))
+```
+
+Overall, these results look similar to the website analysis. In both datasets, communication and collaboration were the #1 and #2 most common soft skills. Is there a correlation between the skill rankings in the two datasets? Let's find out!
+
+<br>
+
+#### Finding #2: There is a strong correlation between the rankings of the most common (valued) soft skills for data scientists in informational websites and job postings
+
+To evaluate the correlation, we first combined the rankings from the two dataframes.
+
+```{r compare-rankings}
+# Rankings from job postings
+soft_skills_freq <- soft_skills_freq %>%
+  mutate(
+    rank_job_postings = which(soft_skills_freq$Skill == Skill)
+  )
+# Rankings from soft skills websites
+top_skills_overall <- top_skills_overall %>%
+  mutate(
+    rank_websites = which(top_skills_overall$Skill == Skill)
+  )
+# Combine rankings
+rankings <- full_join(soft_skills_freq, top_skills_overall, by = "Skill")
+rankings <- rankings %>%
+  select(Skill, rank_job_postings, rank_websites) %>%
+  drop_na()
+```
+
+Then we plotted the rankings with a scatterplot. The correlation coefficient of the line of best fit for the data was 0.79, which indicates a relatively strong association between the two rankings.
+
+```{r scatterplot-rankings, message = FALSE}
+coeff <- round(cor(rankings$rank_job_postings, rankings$rank_websites, 
+                   method = c("pearson")), 2)
+ggplot(rankings, aes(x = rank_job_postings, y = rank_websites)) +
+  geom_point() +
+  geom_smooth(method=lm, se=FALSE) +
+  xlab("Ranking in job postings") + ylab("Ranking on informational websites") +
+    theme(axis.title = element_text(face = "bold")) +
+  geom_text(x = 20, y = 32,
+            label = paste0('r = ', coeff),
+            color = 'blue')  
+```
+
+The top 5 skills are:
+
+```{r top5}
+head(rankings, 5)
+```
+
+In summary, we found similar results from two different data sources, informational websites and job postings. This dual-source approach strengthens the conclusion that the most valued soft skills for data scientists are communication and collaboration, followed by problem-solving, analytical thinking, and an entrepreneurial mindset.
+
+<br>
+
+# [Overall conclusions]{.underline}
+
+<br>
+
+## Bibliography
+
+## 
