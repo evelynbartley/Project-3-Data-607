@@ -71,7 +71,12 @@ datascientists_2023 <- survey_2023 %>%
 
 ### Database Design
 
-Describe philosophy behind normalization
+Firstly we created the ER diagram. we used this to create our logical model.
+Once the logical model was created, we used it to create a normalized relational tables in postgreSQL.
+
+The normalization was done considering the following factors:
+1. the variable values repeated for many observations  were normalized into separate tables by creating IDs.
+2. we could add further group attributes  to the dimensional tables once we normalized the main table.
 
 Generated ID tables in PostgreSQL for all the possible answers from the survey for each topic we want to examine.
 
