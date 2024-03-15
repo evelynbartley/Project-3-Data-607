@@ -281,7 +281,7 @@ Do analysis here!
 dbListTables(sql_db)
 ```
 
-## Employee characteristics
+## Exploratory data analysis
 
 ### Countries
 
@@ -445,6 +445,112 @@ ggplot(survey_comp_experience, aes(x = years, y = compensation)) +
   ylim(0, 1000000) + 
   xlab("Years of experience") + ylab("Compensation (USD)") + 
   theme(axis.title = element_text(face = "bold"))
+```
+
+<br>
+
+### Industry vs annual compensation
+
+Omit rows with missing information, shorten industry names, then group the data by industry.
+
+```{r group-by-industry}
+industry_comp <- employees_df %>%
+  select(industry, compensation) %>%
+  drop_na() %>%
+  mutate(
+    industry = str_replace(industry, "Information.*", "IT"),
+    industry = str_replace(industry, "Financial.*", "Finance"),
+    industry = str_replace(industry, "Manufacturing.*", "Manufacturing"),
+    industry = str_replace(industry, "Retail.*", "Retail"),
+    industry = str_replace(industry, "Advertising.*", "Advertising"),
+    industry = str_replace(industry, "Higher.*", "Education"),
+    industry = str_replace(industry, "Legal.*", "Legal")
+  ) %>%  
+  group_by(industry)  
+```
+
+The fields with the highest median compensation for data scientists were insurance, finance, and legal, which were all more than 100,000 USD. Surprisingly, IT, which has the largest proportion of data scientists in the survey, is associated with the third lowest median compensation (\~64,000 USD).
+
+```{r median-compensation-by-industry}
+industry_comp %>%
+  summarise(
+    median_compensation = median(compensation)
+  ) %>%
+  arrange(desc(median_compensation)) %>%
+  kbl() %>%
+  kable_material() %>%
+  scroll_box(width = "75%", height = "500px")
+```
+
+<br>
+
+The distribution of median annual compensation by industry is shown below. Note that outliers are not plotted. Some industries, such as oil & gas and healthcare had a relatively large spread (IQR) in compensation, while others, such as insurance and legal, had smaller spreads.
+
+```{r compensation-by-industry-boxplots, warning = FALSE, fig.height=4, fig.width=8}
+industry_comp %>%
+  group_by(industry) %>%
+  ggplot(aes(x = compensation, group = industry, color = industry)) +
+  geom_boxplot(outlier.shape = NA) +
+    labs(x = "Annual compensation (USD)") +
+    theme(axis.title = element_text(face = "bold"), 
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          strip.text.x = element_text(size = 8)) +  
+    scale_x_continuous(breaks = c(0, 50000, 100000), 
+                       limits = c(0, 100000),
+                       labels = scales::scientific) +
+  facet_wrap(~ industry) +
+    theme(legend.position = "none") +
+    theme(panel.spacing.x = unit(1, "lines"))
+```
+
+<br>
+
+### Language vs annual compensation
+
+Convert the language variable to a long format by separating the semicolon-delimited string into individual languages. Then group the data by language.
+
+```{r separate-languages}
+language_comp <- employees_df %>%
+  select(language, compensation) %>%
+  drop_na() %>%
+  separate_longer_delim(language, delim = ";") %>%
+  group_by(language)  
+```
+
+COBOL was associated with the highest median compensation, which was surprising because it is a very old language. It is possible that knowledge and proficiency with it is rare nowadays and therefore of high value to companies with legacy systems.
+
+The median annual compensation associated with the languages commonly used in data science (eg, Python, R, SQL) was lower than expected—around 80,000 USD.
+
+```{r median-compensation-by-language}
+language_comp %>%
+  summarise(
+    median_compensation = median(compensation)
+  ) %>%
+  arrange(desc(median_compensation)) %>%
+  kbl() %>%
+  kable_material() %>%
+  scroll_box(width = "75%", height = "500px")
+```
+
+<br>
+
+The distribution of annual compensation by language is shown below. Note that outliers are not plotted.
+
+```{r compensation-by-language-boxplots, warning = FALSE, fig.width=10, fig.height=8}
+language_comp %>%
+  group_by(language) %>%
+  ggplot(aes(x = compensation, group = language, color = language)) +
+  geom_boxplot(outlier.shape = NA) +
+    labs(x = "Annual compensation (USD)") +
+    theme(axis.title = element_text(face = "bold"), 
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          strip.text.x = element_text(size = 8)) +  
+    scale_x_continuous(breaks = c(0, 100000, 200000), limits = c(0, 250000)) +
+  facet_wrap(~ language, ncol = 4) +
+    theme(legend.position = "none") +
+    theme(panel.spacing.x = unit(1, "lines"))  
 ```
 
 <br>
