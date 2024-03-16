@@ -5,7 +5,6 @@ date: "`r Sys.Date()`"
 output: 
   html_document:
     toc: true
-  
 ---
 
 ```{r setup, include=FALSE}
@@ -20,6 +19,8 @@ library(wordcloud)
 library(kableExtra)
 library(hexbin)
 library(DBI)
+library(FactoMineR)
+library(factoextra)
 
 # Establish database connection
 sql_db <- dbConnect(
@@ -32,12 +33,11 @@ sql_db <- dbConnect(
 )
 ```
 
-
 # Introduction
 
 We selected the Data Science Skills option for Project 3. Here, we describe the identification, collection, database storage, and analyses of data to answer the question, "Which are the most valued data science skills?"
 
-We divided this question into two parts–hard skills and soft skills-and analyzed each separately. For the hard skills analysis, we assessed the value of a skill by its frequency of occurrence (ie, a skill that is mentioned many times in a dataset would be a highly valued skill) and by its monetary value. For the soft skills analysis, we only evaluated the value of a skill by the frequency of its occurrence.
+We divided this question into two parts—hard skills and soft skills—and analyzed each separately. For the hard skills analysis, we assessed the value of a skill by its frequency of occurrence (ie, a skill that is mentioned many times in a dataset would be a highly valued skill) and by its ability to explain differences in annual compensation. For the soft skills analysis, we only evaluated the value of a skill by the frequency of its occurrence.
 
 <br>
 
@@ -46,8 +46,6 @@ We divided this question into two parts–hard skills and soft skills-and analyz
 ## Data overview
 
 The hard skills analysis is based on the 2023 [Stack Overflow Annual Developer Survey](https://insights.stackoverflow.com/survey/), which includes survey responses from more than 90,000 software developers from 185 countries. The survey was fielded from May 8, 2023 to May 19, 2023.
-
-\<\<\<How was 185 determined? The Countries section below shows 91 unique countries. \>\>\>
 
 For analysis, we only considered respondents who indicated in the survey that they consented to share their information and answered all the required questions. Approximately 2,000 responses were excluded based on these criteria, leaving 89,184 for analysis.
 
@@ -73,12 +71,9 @@ datascientists_2023 <- survey_2023 %>%
 
 ### Database Design
 
-Firstly we created the ER diagram. we used this to create our logical model.
-Once the logical model was created, we used it to create a normalized relational tables in postgreSQL.
+Firstly we created the ER diagram. we used this to create our logical model. Once the logical model was created, we used it to create a normalized relational tables in postgreSQL.
 
-The normalization was done considering the following factors:
-1. the variable values repeated for many observations  were normalized into separate tables by creating IDs.
-2. we could add further group attributes  to the dimensional tables once we normalized the main table.
+The normalization was done considering the following factors: 1. the variable values repeated for many observations were normalized into separate tables by creating IDs. 2. we could add further group attributes to the dimensional tables once we normalized the main table.
 
 Generated ID tables in PostgreSQL for all the possible answers from the survey for each topic we want to examine.
 
@@ -278,7 +273,6 @@ employees_df <- employees_df %>%
 kable(employees_df)
 ```
 
-
 All our relational tables are created and have their data.
 
 Our SQL relational database is now clean and tidy! I have removed the functions that write to the SQL database so our tables don't get overwritten. They were all variations of `dbWriteTable(sql_db, "table_name", table_df, append = TRUE)`
@@ -287,19 +281,20 @@ This is diagram of our relational database:
 
 ![Entity-relationship diagram](https://github.com/evelynbartley/Project-3-Data-607/blob/main/images/ER_diagram.png?raw=true)
 
-## Analysis
-
-Do analysis here!
+and these are the tables:
 
 ```{r list-tables}
 dbListTables(sql_db)
 ```
 
-## Exploratory data analysis
+<br>
 
-### language skills
-Python is  the most popular language skill for data scientists.
-followed by SQL, Bash/Shell , Javascript, HTML/CSS,R
+## Exploratory data analyses to answer the project question
+
+### Language skills
+
+Python is the most popular language skill for data scientists, followed by SQL, Bash/Shell , Javascript, HTML/CSS, and R.
+
 ```{r}
 # count the occurrence of languages in the survey , group the occurrences more than less than 100 times into "others"  and finally arrange in the descending order and plot in a column chart.
 
@@ -318,10 +313,58 @@ language_skills %>%
 
 ```
 
+<br>
+
+### Principal component analysis of the most common languages
+
+We attempted to determine which of the most common languages accounted for most of the variation in annual compensation by using principal component analysis (PCA). Please note that we are not very familiar with this method and relied heavily on a PCA [tutorial](http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/112-pca-principal-component-analysis-essentials/).
+
+First create the dataframe
+
+```{r language-comp}
+pca_lang_comp <- employees_df %>%
+  select(compensation, language) %>%
+  drop_na() %>%
+  rowwise() %>%
+  mutate(
+    Python = if_else(grepl("Python", language), 1, 0),
+    SQL = if_else(grepl("SQL", language), 1, 0),    
+    Bash_Shell = if_else(grepl("Bash\\/Shell", language), 1, 0),
+    JavaScript = if_else(grepl("JavaScript", language), 1, 0),    
+    HTML_CSS = if_else(grepl("HTML/CSS", language), 1, 0),
+    R = if_else(grepl("R;|;R|;R;", language), 1, 0)
+  ) %>%
+  ungroup() %>%
+  subset(select = -c(language))
+```
+
+Then perform PCA of the data
+
+```{r language-comp-pca}
+res_pca_language <- PCA(pca_lang_comp, graph = FALSE)
+```
+
+HTML_CSS and JavaScript had the highest correlation in the first dimension.
+
+```{r language-comp-pca-dimensions}
+res_desc_language <- dimdesc(res_pca_language, axes = c(1,2), proba = 0.05)
+res_desc_language$Dim.1
+```
+
+The correlation circle shows that HTML_CSS and JavaScript have the highest squared cosine (cos2) values, which is a measure of the quality of representation of the variable on the principal component. Their proximity to the circumference of the circle indicates they are the most important languages that account for the variation in compensation, followed by R. In contrast, the Python and SQL vectors are closer to the center of the circle, which indicates that they are less important languages. However, it should be noted that dimensions 1 and 2 account for less than half of the variance in the data (Dim1 26.3% + Dim2 16.2% = 42.5%).
+
+```{r language-comp-pca-results}
+fviz_pca_var(res_pca_language, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Avoid text overlapping
+             )
+```
+
+<br>
 
 ### Database skills
-PostgreSQL is the most popular database for data scientists.
-followed by MySQL, SQLite and Microsoft SQL server
+
+PostgreSQL is the most popular database for data scientists, followed by MySQL, SQLite and Microsoft SQL server.
 
 ```{r}
 #creating a new database skills table by joining the employees_database table and the database_Id table to get the description of the IDs.
@@ -343,11 +386,56 @@ db_skills <- subset(db_skills,db_id != "NA")
 
 ```
 
-### Tool skills
-Visual Studio Code is the most popular tool for data scientists.
-followed by Jupyter Notebook/lab , PyCharm ,IPython,Vim,Notepad++, RStudio
+<br>
 
+### Principal component analysis of the most common databases
 
+We applied PCA to determine which of the most common databases accounted for most of the variation in annual compensation.
+
+First create the dataframe
+
+```{r db-comp}
+pca_db_comp <- employees_df %>%
+  select(compensation, database) %>%
+  drop_na() %>%
+  rowwise() %>%
+  mutate(
+    PostgreSQL = if_else(grepl("PostgreSQL", database), 1, 0),
+    MySQL = if_else(grepl("MySQL", database), 1, 0),    
+    SQLite = if_else(grepl("SQLite", database), 1, 0),
+    MS_SQL = if_else(grepl("Microsoft SQL server", database), 1, 0)
+  ) %>%
+  ungroup() %>%
+  subset(select = -c(database))
+```
+
+Then perform PCA of the data
+
+```{r db-comp-pca}
+res_pca_db <- PCA(pca_db_comp, graph = FALSE)
+```
+
+SQLite had the highest correlation in the first dimension.
+
+```{r db-comp-pca-dimensions}
+res_desc_db <- dimdesc(res_pca_db, axes = c(1,2), proba = 0.05)
+res_desc_db$Dim.1
+```
+
+The correlation circle shows that SQLite and MySQL have the highest cos2 values and their proximity to the circumference of the circle indicates they are the most important databases accounting for the variation in compensation. However, it should be noted that dimensions 1 and 2 only account for 58% of the variance in the data (Dim1 32.2% + Dim2 25.5% = 57.7%).
+
+```{r db-comp-pca-results}
+fviz_pca_var(res_pca_db, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Avoid text overlapping
+             )
+```
+
+<br>
+
+### Collaboration tool skills
+
+Visual Studio Code is the most popular collaboration tool for data scientists, followed by Jupyter Notebook/lab , PyCharm , IPython, Vim, Notepad++, RStudio.
 
 ```{r}
 
@@ -370,8 +458,57 @@ tool_skills$tool_id <- tool_id$tool[match(tool_skills$tool_id,tool_id$tool_id)]
 
 ```
 
+<br>
 
+### Principal component analysis of the most common collaboration tools
 
+We applied PCA to determine which of the most common collaboration tools accounted for most of the variation in annual compensation.
+
+First create the dataframe
+
+```{r tools-comp}
+pca_tools_comp <- employees_df %>%
+  select(compensation, collab_tools) %>%
+  drop_na() %>%
+  rowwise() %>%
+  mutate(
+    Visual_Studio = if_else(grepl("Visual Studio", collab_tools), 1, 0),
+    Jupyter = if_else(grepl("Jupyter", collab_tools), 1, 0),    
+    PyCharm = if_else(grepl("PyCharm", collab_tools), 1, 0),
+    IPython = if_else(grepl("IPython", collab_tools), 1, 0),
+    Vim = if_else(grepl("Vim", collab_tools), 1, 0),
+    Notepad = if_else(grepl("Notepad", collab_tools), 1, 0),
+    RStudio = if_else(grepl("RStudio", collab_tools), 1, 0)    
+  ) %>%
+  ungroup() %>%
+  subset(select = -c(collab_tools))
+```
+
+Then perform PCA of the data
+
+```{r tools-comp-pca}
+res_pca_tools <- PCA(pca_tools_comp, graph = FALSE)
+```
+
+Jupyter and IPython had the highest correlations in the first dimension.
+
+```{r tools-comp-pca-dimensions}
+res_desc_tools <- dimdesc(res_pca_tools, axes = c(1,2), proba = 0.05)
+res_desc_tools$Dim.1
+```
+
+The correlation circle shows that Jupyter and IPython have the highest cos2 values and their proximity to the circumference of the circle indicates they are the most important collaboration tools accounting for variation in annual compensation, followed by Notepad++, PyCharm, and Visual Studio. In contrast, the RStudio and Vim vectors are closer to the center of the circle, which indicates that they are less important collaboration tools. However, it should be noted that dimensions 1 and 2 only account for 35% of the variance in the data (Dim1 18.6% + Dim2 16.3% = 34.9%).
+
+```{r tools-comp-pca-results}
+fviz_pca_var(res_pca_tools, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Avoid text overlapping
+             )
+```
+
+<br>
+
+## Additional analyses
 
 ### Countries
 
@@ -385,14 +522,14 @@ survey_countries <- employees_df %>%
   rename(region = country)
 ```
 
-
-```{r get-map-data}
+```{r get-map-data, message = FALSE}
 library(ggplot2)
 library(maps)
 library(ggmap)
 mapdata <- map_data("world")
 mapdata <- mapdata %>%
   mutate(
+    # Align map_data country names with those from survey
     region = str_replace(region, "Hong Kong", "Hong Kong (S.A.R.)"),
     region = str_replace(region, "Iran", "Iran, Islamic Republic of"),
     region = str_replace(region, "North Macedonia", "The former Yugoslav Republic of Macedonia"),    
