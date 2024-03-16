@@ -289,7 +289,7 @@ dbListTables(sql_db)
 
 <br>
 
-## Exploratory data analyses to answer the project question
+## Analyses to answer the project question
 
 ### Language skills
 
@@ -319,7 +319,7 @@ language_skills %>%
 
 We attempted to determine which of the most common languages accounted for most of the variation in annual compensation by using principal component analysis (PCA). Please note that we are not very familiar with this method and relied heavily on a PCA [tutorial](http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/112-pca-principal-component-analysis-essentials/).
 
-First create the dataframe
+First create the dataframe.
 
 ```{r language-comp}
 pca_lang_comp <- employees_df %>%
@@ -338,6 +338,13 @@ pca_lang_comp <- employees_df %>%
   subset(select = -c(language))
 ```
 
+Remove rows with compensation values not associated with any of the most common languages.
+
+```{r language-comp-filter}
+pca_lang_comp <- pca_lang_comp %>%
+  filter((Python + SQL + Bash_Shell + JavaScript + HTML_CSS + R) > 0)
+```
+
 Then perform PCA of the data
 
 ```{r language-comp-pca}
@@ -351,7 +358,7 @@ res_desc_language <- dimdesc(res_pca_language, axes = c(1,2), proba = 0.05)
 res_desc_language$Dim.1
 ```
 
-The correlation circle shows that HTML_CSS and JavaScript have the highest squared cosine (cos2) values, which is a measure of the quality of representation of the variable on the principal component. Their proximity to the circumference of the circle indicates they are the most important languages that account for the variation in compensation, followed by R. In contrast, the Python and SQL vectors are closer to the center of the circle, which indicates that they are less important languages. However, it should be noted that dimensions 1 and 2 account for less than half of the variance in the data (Dim1 26.3% + Dim2 16.2% = 42.5%).
+The correlation circle shows that HTML_CSS and JavaScript have the highest squared cosine (cos2) values, which is a measure of the quality of representation of the variable on the principal component. Their proximity to the circumference of the circle indicates they are the most important languages that account for the variation in compensation, followed by R. In contrast, the SQL vector is closer to the center of the circle, which indicates that it less important. However, it should be noted that dimensions 1 and 2 account for less than half of the variance in the data (Dim1 25.7% + Dim2 17.1% = 42.8%).
 
 ```{r language-comp-pca-results}
 fviz_pca_var(res_pca_language, col.var = "cos2",
@@ -409,20 +416,27 @@ pca_db_comp <- employees_df %>%
   subset(select = -c(database))
 ```
 
+Remove rows with compensation values not associated with any of the most common databases.
+
+```{r db-comp-filter}
+pca_db_comp <- pca_db_comp %>%
+  filter((PostgreSQL + MySQL + SQLite + MS_SQL) > 0)
+```
+
 Then perform PCA of the data
 
 ```{r db-comp-pca}
 res_pca_db <- PCA(pca_db_comp, graph = FALSE)
 ```
 
-SQLite had the highest correlation in the first dimension.
+MySQL had the highest correlation in the first dimension.
 
 ```{r db-comp-pca-dimensions}
 res_desc_db <- dimdesc(res_pca_db, axes = c(1,2), proba = 0.05)
 res_desc_db$Dim.1
 ```
 
-The correlation circle shows that SQLite and MySQL have the highest cos2 values and their proximity to the circumference of the circle indicates they are the most important databases accounting for the variation in compensation. However, it should be noted that dimensions 1 and 2 only account for 58% of the variance in the data (Dim1 32.2% + Dim2 25.5% = 57.7%).
+The correlation circle shows that three databases (PostgreSQL, SQLite, and MySQL) had high cos2 values and their proximity to the circumference of the circle indicates they are the most important databases accounting for the variation in compensation. In contrast, Microsoft SQL server was very close to the center, which indicates that it is not very important. However, it should be noted that dimensions 1 and 2 only account for 59% of the variance in the data (Dim1 32.4% + Dim2 26.8% = 59.2%).
 
 ```{r db-comp-pca-results}
 fviz_pca_var(res_pca_db, col.var = "cos2",
@@ -484,20 +498,27 @@ pca_tools_comp <- employees_df %>%
   subset(select = -c(collab_tools))
 ```
 
+Remove rows with compensation values not associated with any of the most common tools.
+
+```{r tools-comp-filter}
+pca_tools_comp <- pca_tools_comp %>%
+  filter((Visual_Studio + Jupyter + PyCharm + IPython + Vim + Notepad + RStudio) > 0)
+```
+
 Then perform PCA of the data
 
 ```{r tools-comp-pca}
 res_pca_tools <- PCA(pca_tools_comp, graph = FALSE)
 ```
 
-Jupyter and IPython had the highest correlations in the first dimension.
+IPython and Jupyter had the highest correlations in the first dimension.
 
 ```{r tools-comp-pca-dimensions}
 res_desc_tools <- dimdesc(res_pca_tools, axes = c(1,2), proba = 0.05)
 res_desc_tools$Dim.1
 ```
 
-The correlation circle shows that Jupyter and IPython have the highest cos2 values and their proximity to the circumference of the circle indicates they are the most important collaboration tools accounting for variation in annual compensation, followed by Notepad++, PyCharm, and Visual Studio. In contrast, the RStudio and Vim vectors are closer to the center of the circle, which indicates that they are less important collaboration tools. However, it should be noted that dimensions 1 and 2 only account for 35% of the variance in the data (Dim1 18.6% + Dim2 16.3% = 34.9%).
+The correlation circle shows that IPython and Jupyter have the highest cos2 values and their proximity to the circumference of the circle indicates they are the most important collaboration tools accounting for variation in annual compensation, followed by PyCharm and Visual Studio. In contrast, the RStudio and Vim vectors are closer to the center of the circle, which indicates that they are less important. However, it should be noted that dimensions 1 and 2 only account for 35% of the variance in the data (Dim1 17.7% + Dim2 16.8% = 34.5%).
 
 ```{r tools-comp-pca-results}
 fviz_pca_var(res_pca_tools, col.var = "cos2",
@@ -508,7 +529,7 @@ fviz_pca_var(res_pca_tools, col.var = "cos2",
 
 <br>
 
-## Additional analyses
+## Additional exploratory data analyses
 
 ### Countries
 
@@ -816,7 +837,7 @@ job_postings_raw <- read_csv('https://media.githubusercontent.com/media/evelynba
 
 ## Data transformations
 
-### Data from soft skills websites
+### Data from informational websites
 
 ```{r select-columns1}
 soft_skills <- soft_skills_raw %>%
@@ -864,7 +885,7 @@ glimpse(job_postings)
 
 ## Analyses
 
-### Soft skills websites
+### Informational websites
 
 #### Finding #1: Communication is the most common (valued) soft skill in websites about important soft skills for data scientists
 
@@ -955,7 +976,7 @@ ggplot(top_skills_audience, aes(x = Audience, y = freq, fill = Skill)) +
 
 <br>
 
-### Data science job postings
+### Job postings
 
 We first need to define the soft skills of interest. This was done by using the soft skills identified by the web search above and adding some common synonyms.
 
@@ -1001,7 +1022,7 @@ soft_skills_freq <- soft_skills_freq %>%
 
 <br>
 
-#### Finding #1: Communication is the most common (valued) soft skill in data scientist job postings
+#### Communication is the most common (valued) soft skill in data scientist job postings
 
 As before, we show this with a word cloud and a barplot.
 
@@ -1025,7 +1046,9 @@ Overall, these results look similar to the website analysis. In both datasets, c
 
 <br>
 
-#### Finding #2: There is a strong correlation between the rankings of the most common (valued) soft skills for data scientists in informational websites and job postings
+### Correlation between skill rankings from informational websites vs job postings
+
+#### There is a strong correlation between the rankings of the most common (valued) soft skills for data scientists in informational websites and job postings
 
 To evaluate the correlation, we first combined the rankings from the two dataframes.
 
