@@ -37,7 +37,7 @@ sql_db <- dbConnect(
 
 We selected the Data Science Skills option for Project 3. Here, we describe the identification, collection, database storage, and analyses of data to answer the question, "Which are the most valued data science skills?"
 
-We divided this question into two parts—hard skills and soft skills—and analyzed each separately. For the hard skills analysis, we assessed the value of a skill by its frequency of occurrence (ie, a skill that is mentioned many times in a dataset would be a highly valued skill) and by its ability to explain differences in annual compensation. For the soft skills analysis, we only evaluated the value of a skill by the frequency of its occurrence.
+We divided this question into two parts—hard skills and soft skills—and analyzed each separately. We assessed the value of a skill by its frequency of occurrence (ie, a skill that is mentioned many times in a dataset would be a highly valued skill). As an exploratory analysis, we also considered the ability of skills to account for differences in annual compensation.
 
 <br>
 
