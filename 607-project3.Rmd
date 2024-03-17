@@ -35,7 +35,7 @@ sql_db <- dbConnect(
 
 # Introduction
 
-We selected the Data Science Skills option for Project 3. Here, we describe the identification, collection, database storage, and analyses of data to answer the question, "Which are the most valued data science skills?"
+We selected the Data Science Skills option for Project 3. Here, we describe the identification, collection, database creation, and analyses of data to answer the question, "Which are the most valued data science skills?"
 
 We divided this question into two parts—hard skills and soft skills—and analyzed each separately. We assessed the value of a skill by its frequency of occurrence (ie, a skill that is mentioned many times in a dataset would be a highly valued skill). As an exploratory analysis, we also considered the ability of skills to account for differences in annual compensation.
 
@@ -73,19 +73,19 @@ datascientists_2023 <- survey_2023 %>%
 
 Firstly we created the ER diagram. we used this to create our logical model. Once the logical model was created, we used it to create a normalized relational tables in postgreSQL.
 
-The normalization was done considering the following factors: 1. the variable values repeated for many observations were normalized into separate tables by creating IDs. 2. we could add further group attributes to the dimensional tables once we normalized the main table.
+The normalization was done considering the following factors:
 
-Generated ID tables in PostgreSQL for all the possible answers from the survey for each topic we want to examine.
+1.  The variable values repeated for many observations were normalized into separate tables by creating IDs.
+
+2.  We could add further group attributes to the dimensional tables once we normalized the main table.
+
+We generated ID tables in PostgreSQL for all the possible answers from the survey for each topic we want to examine. The database was housed in Google Cloud.
 
 <br>
 
-## Data Tidying
+## Data tidying
 
-The survey data will be tidied in R, pushed to pre-made relational tables in PostgreSQL, and then analyzed through R.
-
-### Tidy the data
-
-**NOTE to authors** - because there is already a table with the USD value of an observation's compensation already converted, I'm using that column for our 'compensation' column
+The survey data was tidied in R, pushed to pre-made relational tables in PostgreSQL, and then analyzed through R.
 
 ```{r tidy-ds_2023, warning=FALSE}
 # Match df to 'employee' table format in DB
@@ -139,7 +139,7 @@ employees_df <- employees_df %>%
   )
 ```
 
-We define functions for algorithms we will run repeatedly. I tried to write a function that did all the steps to normalize each survey question, but it was too nuanced.
+We define functions for algorithms we will run repeatedly. We initially tried to write a single function that did all the steps to normalize each survey question, but it was too nuanced.
 
 ```{r define-functions, echo=FALSE}
 # Define split_and_unnest function
@@ -196,7 +196,7 @@ languages_df$language_id <- language_id$language_id[match(languages_df$language_
 # Line removed to prevent data duplication
 ```
 
-Automated as much as I could in the function definitions above. Repeat these steps for the other tables
+Automated as much as I could in the function definitions above. Repeat these steps for the other tables.
 
 ```{r write-employee-platforms, echo=FALSE}
 # Create df to write to 'employee-platforms' table
@@ -273,11 +273,11 @@ employees_df <- employees_df %>%
 kable(employees_df)
 ```
 
-All our relational tables are created and have their data.
+All our relational tables were created successfully and contained clean and tidy data.
 
-Our SQL relational database is now clean and tidy! I have removed the functions that write to the SQL database so our tables don't get overwritten. They were all variations of `dbWriteTable(sql_db, "table_name", table_df, append = TRUE)`
+We removed the functions that write to the SQL database so our tables don't get overwritten. They were all variations of `dbWriteTable(sql_db, "table_name", table_df, append = TRUE).`
 
-This is diagram of our relational database:
+This is the entity-relationship diagram of our relational database:
 
 ![Entity-relationship diagram](https://github.com/evelynbartley/Project-3-Data-607/blob/main/images/ER_diagram.png?raw=true)
 
@@ -812,6 +812,8 @@ language_comp %>%
 
 # [Soft skills analysis]{.underline}
 
+This analysis was separate from the hard skills analysis and was not included in the relational database because data were scarce and this analysis was initially exploratory.
+
 ## Data
 
 Soft skills data were collected from two different sources.
@@ -1100,47 +1102,52 @@ In summary, we found similar results from two different data sources, informatio
 
 # [Overall conclusions]{.underline}
 
-**1. For the technical skills, the conclusions are summarized as follows:**
+We successfully identified data sources to address the project question and designed and implemented a relational database in Google Cloud to store and access the data. Our main findings from our exploratory data analyses are summarized below.
 
-**Languages:**
+**1. Technical (hard) skills analysis**
 
-Python is the most popular language skill for data scientists, followed by SQL, Bash/Shell , Javascript, HTML/CSS, and R.
+-   **Languages**
 
-COBOL was associated with the highest median compensation, which was surprising because it is a very old language. It is possible that knowledge and proficiency with it is rare nowadays and therefore of high value to companies with legacy systems.
+    -   Python is the most popular language skill for data scientists, followed by SQL, Bash/Shell, Javascript, HTML/CSS, and R.
 
-The median annual compensation associated with the languages commonly used in data science (eg, Python, R, SQL) was lower than expected—around 80,000 USD.
+    -   COBOL was associated with the highest median compensation, which was surprising because it is a very old language. It is possible that knowledge and proficiency with it is rare nowadays and therefore of high value to companies with legacy systems.
 
-**Databases:**
+    -   The median annual compensation associated with the languages commonly used in data science (eg, Python, R, SQL) was lower than expected—around 80,000 USD.
 
-PostgreSQL is the most popular database for data scientists, followed by MySQL, SQLite and Microsoft SQL server.
+-   **Databases**
 
-**Collaboration tools:**
+    -   PostgreSQL is the most popular database for data scientists, followed by MySQL, SQLite, and Microsoft SQL server.
 
-Visual Studio Code is the most popular collaboration tool for data scientists, followed by Jupyter Notebook/lab , PyCharm , IPython, Vim, Notepad++, RStudio.
+-   **Collaboration tools**
 
+    -   Visual Studio Code is the most popular collaboration tool for data scientists, followed by Jupyter Notebook/lab, PyCharm, IPython, Vim, Notepad++, and RStudio.
 
-**Industry:**
+-   **Exploratory analyses**
 
-Data scientists were mostly employed in IT. The next most common fields (other than “Other”) were finance, manufacturing, and healthcare.
+    -   **Industry**
 
-The fields with the highest median compensation for data scientists were insurance, finance, and legal, which were all more than 100,000 USD. Surprisingly, IT, which has the largest proportion of data scientists in the survey, is associated with the third lowest median compensation (~64,000 USD).
+        -   Data scientists were mostly employed in IT. The next most common fields (other than “Other”) were finance, manufacturing, and healthcare.
 
-**Experience:**
+        -   The fields with the highest median compensation for data scientists were insurance, finance, and legal, which were all more than 100,000 USD. Surprisingly, IT, which has the largest proportion of data scientists in the survey, is associated with the third lowest median compensation (\~64,000 USD).
 
-Some data scientists with <15 years of experience earned large salaries, and those with >20 years of experience earned similar amounts as those who just entered the field. This suggests that other factors besides years of experience influence the compensation of data scientists.
+    -   **Experience**
 
-**2. For the soft skills, the conclusions are summarized as follows:**
+        -   Some data scientists with \<15 years of experience earned large salaries, and those with \>20 years of experience earned similar amounts as those who just entered the field. This suggests that other factors besides years of experience influence the compensation of data scientists.
 
-we found similar results from two different data sources, informational websites and job postings. 
+    -   **Principal component analyses**
 
-This dual-source approach strengthens the conclusion that the most valued soft skills for data scientists are communication and collaboration, followed by problem-solving, analytical thinking, and an entrepreneurial mindset.
+        -   Principal component analysis suggested that the most common hard skills only account for about one-third of the variation in annual compensation, which suggests that other factors besides hard skills influence compensation.
 
-Communication has been the most frequent soft skill since 2021. infact the frequency of communication has increased by 50% from 2021 to 2024.
+**2. Soft skills analysis**
 
-In addition, the number of skills of interest has increased each year since 2021, which may indicate that the data science field is becoming increasingly competitive.
+-   We found similar results from two different data sources, informational websites and job postings.
 
-<br>
+    -   This dual-source approach strengthens the conclusion that the most valued soft skills for data scientists are communication and collaboration, followed by problem-solving, analytical thinking, and an entrepreneurial mindset.
 
-## Bibliography
+-   Communication has been the most frequent soft skill since 2021. In fact, the frequency of communication has increased by 50% from 2021 to 2024.
+
+-   In addition, the number of skills of interest has increased each year since 2021, which may indicate that the data science field is becoming increasingly competitive.
+
+------------------------------------------------------------------------
 
 ## 
