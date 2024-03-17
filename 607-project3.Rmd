@@ -1,9 +1,11 @@
 ---
 title: "DATA 607 Project 3"
-author: "Evelyn Bartley, Dhanya Nair, Alexander Simon, AJ Strauman-Scott, Peter Thompson"
+author: "Evelyn Bartley, Dhanya Nair, Alexander Simon, AJ Strauman-Scott"
 date: "`r Sys.Date()`"
-output: 
+output:
   html_document:
+    toc: true
+  pdf_document:
     toc: true
 ---
 
@@ -37,11 +39,11 @@ sql_db <- dbConnect(
 
 We selected the Data Science Skills option for Project 3. Here, we describe the identification, collection, database creation, and analyses of data to answer the question, "Which are the most valued data science skills?"
 
-We divided this question into two parts—hard skills and soft skills—and analyzed each separately. We assessed the value of a skill by its frequency of occurrence (ie, a skill that is mentioned many times in a dataset would be a highly valued skill). As an exploratory analysis, we also considered the ability of skills to account for differences in annual compensation.
+We divided this question into two parts—hard (technical) skills and soft skills—and analyzed each separately. We assessed the value of a skill by its frequency of occurrence (ie, a skill that is mentioned many times in a dataset would be a highly valued skill). As an exploratory analysis, we also considered the ability of skills to account for differences in annual compensation.
 
 <br>
 
-# [Hard skills analysis]{.underline}
+# Hard skills analysis
 
 ## Data overview
 
@@ -69,7 +71,7 @@ datascientists_2023 <- survey_2023 %>%
 
 <br>
 
-### Database Design
+### Database design
 
 Firstly we created the ER diagram. we used this to create our logical model. Once the logical model was created, we used it to create a normalized relational tables in postgreSQL.
 
@@ -810,7 +812,7 @@ language_comp %>%
 
 <br>
 
-# [Soft skills analysis]{.underline}
+# Soft skills analysis
 
 This analysis was separate from the hard skills analysis and was not included in the relational database because data were scarce and this analysis was initially exploratory.
 
@@ -826,7 +828,7 @@ Soft skills data were collected from two different sources.
 
     -   data scientist recruit "soft skills"
 
-2.  Kaggle [dataset](https://www.kaggle.com/datasets/asaniczka/data-science-job-postings-and-skills) of 12,217 data science-related job postings on LinkedIn during 2024.
+2.  Kaggle [dataset](https://www.kaggle.com/datasets/asaniczka/data-science-job-postings-and-skills) of 12,217 data science-related job postings on LinkedIn during 2024. These job postings included soft skills that employers considered important for the job.
 
 All original data were CSV files and saved to our team GitHub repository.
 
@@ -1090,7 +1092,7 @@ ggplot(rankings, aes(x = rank_job_postings, y = rank_websites)) +
             color = 'blue')  
 ```
 
-The top 5 skills are:
+The top 5 soft skills are:
 
 ```{r top5}
 head(rankings, 5)
@@ -1100,7 +1102,7 @@ In summary, we found similar results from two different data sources, informatio
 
 <br>
 
-# [Overall conclusions]{.underline}
+# Overall conclusions
 
 We successfully identified data sources to address the project question and designed and implemented a relational database in Google Cloud to store and access the data. Our main findings from our exploratory data analyses are summarized below.
 
@@ -1136,7 +1138,7 @@ We successfully identified data sources to address the project question and desi
 
     -   **Principal component analyses**
 
-        -   Principal component analysis suggested that the most common hard skills only account for about one-third of the variation in annual compensation, which suggests that other factors besides hard skills influence compensation.
+        -   Principal component analysis suggested that the most common hard skills only account for about one-third to one-half of the variation in annual compensation, which suggests that other factors besides hard skills influence compensation.
 
 **2. Soft skills analysis**
 
@@ -1144,10 +1146,8 @@ We successfully identified data sources to address the project question and desi
 
     -   This dual-source approach strengthens the conclusion that the most valued soft skills for data scientists are communication and collaboration, followed by problem-solving, analytical thinking, and an entrepreneurial mindset.
 
--   Communication has been the most frequent soft skill since 2021. In fact, the frequency of communication has increased by 50% from 2021 to 2024.
+-   Communication has been the most frequent soft skill since 2021.
 
 -   In addition, the number of skills of interest has increased each year since 2021, which may indicate that the data science field is becoming increasingly competitive.
 
 ------------------------------------------------------------------------
-
-## 
