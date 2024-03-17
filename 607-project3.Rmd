@@ -308,7 +308,9 @@ language_skills %>%
   ggplot(aes(x = fct_reorder(language_id,n), y = n)) + 
     geom_col(fill = "lightblue") + 
   coord_flip() +
-    labs(x = "languages", y = "most valuable data science - language skills", caption = "https://insights.stackoverflow.com/survey/")
+    labs(title ="Most valuable data science - language skills",
+         x = "Languages", 
+         y = "Count", caption = "https://insights.stackoverflow.com/survey/")
 
 
 ```
@@ -389,7 +391,7 @@ db_skills <- subset(db_skills,db_id != "NA")
   ggplot(aes(x = fct_reorder(db_id,n), y = n)) + 
     geom_col(fill = "lightblue") + 
   coord_flip() +
-    labs(x = "Databases", y = "most valuable data science - Database skills", caption = "https://insights.stackoverflow.com/survey/")
+    labs(title ="Most valuable data science - Database skills",x = "Databases", y = "Count", caption = "https://insights.stackoverflow.com/survey/")
 
 ```
 
@@ -453,7 +455,7 @@ Visual Studio Code is the most popular collaboration tool for data scientists, f
 
 ```{r}
 
-#creating a new database skills table by joining the employees_database table and the database_Id table to get the description of the IDs.
+#creating a new collaboration tool  skills table by joining the employees_database table and the database_Id table to get the description of the IDs.
 tool_skills <- tools_df 
 tool_skills$tool_id <- tool_id$tool[match(tool_skills$tool_id,tool_id$tool_id)] 
 
@@ -468,7 +470,8 @@ tool_skills$tool_id <- tool_id$tool[match(tool_skills$tool_id,tool_id$tool_id)]
   ggplot(aes(x = fct_reorder(tool_id,n), y = n)) + 
     geom_col(fill = "lightblue") + 
   coord_flip() +
-    labs(x = "Databases", y = "most valuable data science - Tool skills", caption = "https://insights.stackoverflow.com/survey/")
+    labs(title ="Most valuable data science - Tool skills",
+         x = "Tools", y = "Count", caption = "https://insights.stackoverflow.com/survey/")
 
 ```
 
@@ -1096,6 +1099,45 @@ In summary, we found similar results from two different data sources, informatio
 <br>
 
 # [Overall conclusions]{.underline}
+
+**1. For the technical skills, the conclusions are summarized as follows:**
+
+**Languages:**
+
+Python is the most popular language skill for data scientists, followed by SQL, Bash/Shell , Javascript, HTML/CSS, and R.
+
+COBOL was associated with the highest median compensation, which was surprising because it is a very old language. It is possible that knowledge and proficiency with it is rare nowadays and therefore of high value to companies with legacy systems.
+
+The median annual compensation associated with the languages commonly used in data science (eg, Python, R, SQL) was lower than expected—around 80,000 USD.
+
+**Databases:**
+
+PostgreSQL is the most popular database for data scientists, followed by MySQL, SQLite and Microsoft SQL server.
+
+**Collaboration tools:**
+
+Visual Studio Code is the most popular collaboration tool for data scientists, followed by Jupyter Notebook/lab , PyCharm , IPython, Vim, Notepad++, RStudio.
+
+
+**Industry:**
+
+Data scientists were mostly employed in IT. The next most common fields (other than “Other”) were finance, manufacturing, and healthcare.
+
+The fields with the highest median compensation for data scientists were insurance, finance, and legal, which were all more than 100,000 USD. Surprisingly, IT, which has the largest proportion of data scientists in the survey, is associated with the third lowest median compensation (~64,000 USD).
+
+**Experience:**
+
+Some data scientists with <15 years of experience earned large salaries, and those with >20 years of experience earned similar amounts as those who just entered the field. This suggests that other factors besides years of experience influence the compensation of data scientists.
+
+**2. For the soft skills, the conclusions are summarized as follows:**
+
+we found similar results from two different data sources, informational websites and job postings. 
+
+This dual-source approach strengthens the conclusion that the most valued soft skills for data scientists are communication and collaboration, followed by problem-solving, analytical thinking, and an entrepreneurial mindset.
+
+Communication has been the most frequent soft skill since 2021. infact the frequency of communication has increased by 50% from 2021 to 2024.
+
+In addition, the number of skills of interest has increased each year since 2021, which may indicate that the data science field is becoming increasingly competitive.
 
 <br>
 
